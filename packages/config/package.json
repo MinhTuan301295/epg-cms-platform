@@ -1,0 +1,17 @@
+{
+  "name": "@epg-cms/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./eslint/base": "./eslint/base.json",
+    "./prettier": "./prettier/index.json",
+    "./typescript/base": "./typescript/base.json"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "lint": "echo \"config package has no lintable source\"",
+    "typecheck": "echo \"config package has no TypeScript source\"",
+    "build": "mkdir -p dist && echo \"config package build complete\""
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@epg-cms/epg-importer",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "mkdir -p dist && echo \"epg-importer build placeholder\"",
+    "dev": "echo \"epg-importer app not implemented yet\"",
+    "lint": "echo \"epg-importer lint placeholder\"",
+    "typecheck": "echo \"epg-importer typecheck placeholder\"",
+    "clean": "rm -rf dist"
+  }
+}

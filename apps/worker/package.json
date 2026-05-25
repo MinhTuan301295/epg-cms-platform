@@ -1,0 +1,12 @@
+{
+  "name": "@epg-cms/worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "mkdir -p dist && echo \"worker build placeholder\"",
+    "dev": "echo \"worker app not implemented yet\"",
+    "lint": "echo \"worker lint placeholder\"",
+    "typecheck": "echo \"worker typecheck placeholder\"",
+    "clean": "rm -rf dist"
+  }
+}

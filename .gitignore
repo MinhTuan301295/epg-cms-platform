@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.*
+
+# Build outputs
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+*.d.ts.map
+
+# Monorepo and tool caches
+.turbo/
+.cache/
+.eslintcache
+.parcel-cache/
+.vite/
+
+# Local/secret environment files
+.env
+.env.local
+.env.production
+.env.staging
+.env.*.local
+
+# Keep committed environment templates/defaults.
+!.env.example
+!.env.development
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Generated config output from TypeScript composite builds
+vite.config.js
+vite.config.d.ts
+
+# Docker and local database volumes/dumps
+*.dump
+*.sql
+docker-data/
+postgres-data/
+redis-data/

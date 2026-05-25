@@ -1,0 +1,12 @@
+{
+  "name": "@epg-cms/public-api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "mkdir -p dist && echo \"public-api build placeholder\"",
+    "dev": "echo \"public-api app not implemented yet\"",
+    "lint": "echo \"public-api lint placeholder\"",
+    "typecheck": "echo \"public-api typecheck placeholder\"",
+    "clean": "rm -rf dist"
+  }
+}
