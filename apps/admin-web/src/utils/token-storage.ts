@@ -2,7 +2,8 @@ export interface StoredUser {
   id: string;
   email: string;
   name?: string | null;
-  role: string;
+  role: 'ADMIN' | 'EDITOR' | 'VIEWER';
+  permissions?: string[];
   isActive?: boolean;
 }
 

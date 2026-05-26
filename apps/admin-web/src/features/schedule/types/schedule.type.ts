@@ -63,6 +63,12 @@ export interface ScheduleMutationResponse {
   warnings: TimelineWarning[];
 }
 
+export interface PublishScheduleResponse {
+  success: boolean;
+  message: string;
+  data: Schedule;
+}
+
 export interface GetSchedulesParams {
   channelId?: string;
   assetId?: string;

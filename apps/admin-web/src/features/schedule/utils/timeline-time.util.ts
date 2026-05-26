@@ -24,12 +24,36 @@ export function pxToTime(offsetPx: number, dayStart: Date, pixelsPerHour: number
   return dayjs(dayStart).add(seconds, 'second').toDate();
 }
 
+/**
+ * Snaps `time` to the nearest multiple of `intervalMinutes`.
+ * Default is 5 minutes — fine-grained for schedule placement.
+ */
 export function snapTime(time: Date, intervalMinutes = 5): Date {
   const intervalSeconds = intervalMinutes * 60;
   const unix = dayjs(time).unix();
   const snappedUnix = Math.round(unix / intervalSeconds) * intervalSeconds;
 
   return dayjs.unix(snappedUnix).toDate();
+}
+
+/** Round `date` to the nearest `minutes` boundary (alias for snapTime, explicit name). */
+export function roundToNearestMinutes(date: Date, minutes: number): Date {
+  return snapTime(date, minutes);
+}
+
+/** Add `seconds` to `date` and return a new Date. */
+export function addSeconds(date: Date, seconds: number): Date {
+  return dayjs(date).add(seconds, 'second').toDate();
+}
+
+/** Return the duration in whole seconds between two ISO strings or Dates. */
+export function getDurationSeconds(startTime: Date | string, stopTime: Date | string): number {
+  return Math.max(0, dayjs(stopTime).diff(dayjs(startTime), 'second'));
+}
+
+/** Return the absolute difference in minutes between two dates. */
+export function diffMinutes(a: Date | string, b: Date | string): number {
+  return Math.abs(dayjs(a).diff(dayjs(b), 'minute'));
 }
 
 export function formatTimelineTime(time: Date | string): string {

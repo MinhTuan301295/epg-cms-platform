@@ -1,10 +1,22 @@
-import { Body, Controller, Delete, Get, Inject, Param, ParseUUIDPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiExtraModels, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { PERMISSIONS } from '../../common/permissions/permissions.constants';
 import type { RequestUser } from '../../common/types/request-user.type';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { QuerySchedulesDto } from './dto/query-schedules.dto';
@@ -21,25 +33,27 @@ import { SchedulesService } from './schedules.service';
 @ApiTags('Schedules')
 @ApiBearerAuth()
 @ApiExtraModels(QuerySchedulesDto)
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('schedules')
 export class SchedulesController {
   constructor(@Inject(SchedulesService) private readonly schedulesService: SchedulesService) {}
 
   @Get()
+  @Permissions(PERMISSIONS.SCHEDULES_VIEW)
   @ApiOperation({ summary: 'List schedules' })
   findAll(@Query() query: QuerySchedulesDto): Promise<SchedulesListResponseDto> {
     return this.schedulesService.findAll(query);
   }
 
   @Get(':id')
+  @Permissions(PERMISSIONS.SCHEDULES_VIEW)
   @ApiOperation({ summary: 'Get schedule by id' })
   findOne(@Param('id', ParseUUIDPipe) id: string): Promise<ScheduleResponseDto> {
     return this.schedulesService.findOne(id);
   }
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  @Permissions(PERMISSIONS.SCHEDULES_CREATE)
   @ApiOperation({ summary: 'Create schedule' })
   @ApiBody({ type: CreateScheduleDto })
   create(
@@ -50,7 +64,7 @@ export class SchedulesController {
   }
 
   @Post(':id/publish')
-  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  @Permissions(PERMISSIONS.SCHEDULES_PUBLISH)
   @ApiOperation({ summary: 'Publish schedule' })
   @ApiBody({ type: PublishScheduleDto })
   publish(
@@ -63,7 +77,7 @@ export class SchedulesController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  @Permissions(PERMISSIONS.SCHEDULES_UPDATE)
   @ApiOperation({ summary: 'Update schedule' })
   @ApiBody({ type: UpdateScheduleDto })
   update(
@@ -75,7 +89,7 @@ export class SchedulesController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN, UserRole.EDITOR)
+  @Permissions(PERMISSIONS.SCHEDULES_DELETE)
   @ApiOperation({ summary: 'Cancel schedule' })
   remove(
     @Param('id', ParseUUIDPipe) id: string,

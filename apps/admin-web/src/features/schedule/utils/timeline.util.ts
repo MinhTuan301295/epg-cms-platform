@@ -51,13 +51,17 @@ export function findGaps(schedules: Schedule[]): TimelineWarning[] {
 
     if (previous && current && dayjs(previous.stopTime).isBefore(current.startTime)) {
       warnings.push({
-        type: 'GAP',
-        message: 'Gap detected between schedules.',
+        // GAP_BEFORE: the *current* schedule has a gap before it.
+        // scheduleId points to current so WarningPanel can snap it to previous.stopTime.
+        type: 'GAP_BEFORE',
+        message: `Gap before "${current.name}".`,
         from: previous.stopTime,
         to: current.startTime,
+        scheduleId: current.id,
       });
     }
   }
 
   return warnings;
 }
+

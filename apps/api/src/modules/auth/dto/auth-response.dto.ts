@@ -5,6 +5,7 @@ export class AuthUserDto {
   email!: string;
   name!: string | null;
   role!: UserRole;
+  permissions!: string[];
   isActive!: boolean;
 }
 

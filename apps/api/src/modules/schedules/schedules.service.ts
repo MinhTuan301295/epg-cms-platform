@@ -144,7 +144,7 @@ export class SchedulesService {
 
     return {
       data: this.toResponse(schedule),
-      warnings,
+      warnings: warnings.map((warning) => ({ ...warning, scheduleId: schedule.id })),
     };
   }
 
@@ -202,7 +202,7 @@ export class SchedulesService {
 
     return {
       data: this.toResponse(schedule),
-      warnings,
+      warnings: warnings.map((warning) => ({ ...warning, scheduleId: schedule.id })),
     };
   }
 

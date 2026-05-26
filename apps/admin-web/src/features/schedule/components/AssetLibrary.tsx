@@ -1,4 +1,4 @@
-import { SearchOutlined } from '@ant-design/icons';
+import { FileImageOutlined, SearchOutlined } from '@ant-design/icons';
 import { useDraggable } from '@dnd-kit/core';
 import { Empty, Input, Tag, Typography } from 'antd';
 import { useMemo, useState } from 'react';
@@ -11,20 +11,26 @@ interface AssetLibraryProps {
 
 export function AssetLibrary({ assets }: AssetLibraryProps) {
   const [search, setSearch] = useState('');
+
+  // Defensive normalisation: if the backend envelope leaks through, extract
+  // the array. Never call .map / .filter on a non-array.
+  const safeAssets: Asset[] = Array.isArray(assets)
+    ? assets
+    : Array.isArray((assets as unknown as { data?: Asset[] })?.data)
+      ? (assets as unknown as { data: Asset[] }).data
+      : [];
+
   const filteredAssets = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-
-    if (!keyword) {
-      return assets;
-    }
-
-    return assets.filter((asset) => asset.name.toLowerCase().includes(keyword));
-  }, [assets, search]);
+    if (!keyword) return safeAssets;
+    return safeAssets.filter((asset) => asset.name.toLowerCase().includes(keyword));
+  }, [safeAssets, search]);
 
   return (
     <aside className="schedule-asset-library">
       <div className="timeline-panel-title">Asset Library</div>
       <Input
+        className="asset-library-search"
         allowClear
         prefix={<SearchOutlined />}
         placeholder="Search assets"
@@ -42,45 +48,74 @@ export function AssetLibrary({ assets }: AssetLibraryProps) {
   );
 }
 
-function DraggableAsset({ asset }: { asset: Asset }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+interface DraggableAssetProps {
+  asset: Asset;
+}
+
+export function DraggableAsset({ asset }: DraggableAssetProps) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `asset:${asset.id}`,
-    data: {
-      kind: 'asset',
-      asset,
-    },
+    data: { kind: 'asset', asset },
   });
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
 
   return (
     <div
       ref={setNodeRef}
       className="asset-card"
-      style={style}
-      data-dragging={isDragging}
+      style={{ opacity: isDragging ? 0.35 : 1 }}
       {...listeners}
       {...attributes}
     >
-      <div className="asset-poster">
-        {asset.posterUrl || asset.thumbnailUrl ? (
-          <img src={asset.posterUrl ?? asset.thumbnailUrl ?? ''} alt="" />
-        ) : (
-          <span>{asset.type}</span>
-        )}
-      </div>
+      <AssetCardContent asset={asset} />
+    </div>
+  );
+}
+
+/** Stateless card body — reused inside DragOverlay as a floating preview. */
+export function AssetCardContent({ asset }: { asset: Asset }) {
+  return (
+    <>
+      <AssetPoster asset={asset} />
       <div className="asset-card-body">
-        <Typography.Text strong ellipsis>
+        <Typography.Text strong ellipsis style={{ color: '#f1f5f9', fontSize: 13 }}>
           {asset.name}
         </Typography.Text>
         <div className="asset-meta">
-          <Tag color={asset.type === 'LIVE' ? 'red' : 'blue'}>{asset.type}</Tag>
-          <Typography.Text type="secondary">{formatDuration(asset.duration)}</Typography.Text>
+          <Tag className={asset.type === 'LIVE' ? 'asset-type-tag asset-type-live' : 'asset-type-tag asset-type-vod'}>
+            {asset.type}
+          </Tag>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {formatDuration(asset.duration)}
+          </Typography.Text>
         </div>
       </div>
+    </>
+  );
+}
+
+/** Poster with graceful fallback — no broken-image icons ever appear. */
+function AssetPoster({ asset }: { asset: Asset }) {
+  const [imgError, setImgError] = useState(false);
+  const hasSrc = Boolean(asset.posterUrl || asset.thumbnailUrl) && !imgError;
+  // Derive a short initial from the asset name for the placeholder
+  const initial = asset.name.trim().charAt(0).toUpperCase();
+
+  if (hasSrc) {
+    return (
+      <div className="asset-poster">
+        <img
+          src={asset.posterUrl ?? asset.thumbnailUrl ?? ''}
+          alt=""
+          onError={() => setImgError(true)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="asset-poster asset-poster-fallback">
+      <FileImageOutlined style={{ fontSize: 16, color: '#60a5fa', marginBottom: 2 }} />
+      <span className="asset-poster-initial">{initial}</span>
     </div>
   );
 }

@@ -1,21 +1,21 @@
 import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { PERMISSIONS } from '../../common/permissions/permissions.constants';
 import { AuditLogsService } from './audit-logs.service';
 
 @ApiTags('Audit Logs')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('audit-logs')
 export class AuditLogsController {
   constructor(@Inject(AuditLogsService) private readonly auditLogsService: AuditLogsService) {}
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.EDITOR)
-  @ApiOperation({ summary: 'List schedule audit logs' })
+  @Permissions(PERMISSIONS.AUDIT_VIEW)
+  @ApiOperation({ summary: 'List schedule audit logs (admin only)' })
   findAll(@Query('limit') limit?: string) {
     return this.auditLogsService.findAll(limit ? Number(limit) : undefined);
   }

@@ -2,6 +2,7 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { resolvePermissionsForRole } from '../../common/permissions/role-permissions';
 import type { JwtPayload } from '../../common/types/jwt-payload.type';
 import { UsersService } from '../users/users.service';
 import type { AuthResponseDto, AuthUserDto } from './dto/auth-response.dto';
@@ -20,6 +21,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      permissions: this.resolveEffectivePermissions(user),
     };
 
     return {
@@ -60,7 +62,12 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: user.role,
+      permissions: this.resolveEffectivePermissions(user),
       isActive: user.isActive,
     };
+  }
+
+  private resolveEffectivePermissions(user: User): string[] {
+    return resolvePermissionsForRole(user.role, user.permissions);
   }
 }

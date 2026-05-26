@@ -1,9 +1,8 @@
-import { Table, Typography } from 'antd';
+import { Table } from 'antd';
 
 export function AuditLogsPage() {
   return (
     <section>
-      <Typography.Title level={2}>Audit Logs</Typography.Title>
       <Table
         rowKey="id"
         columns={[

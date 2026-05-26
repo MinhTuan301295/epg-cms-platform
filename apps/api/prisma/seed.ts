@@ -1,5 +1,6 @@
 import { AssetType, PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { ROLE_DEFAULT_PERMISSIONS } from '../src/common/permissions/role-permissions';
 
 const prisma = new PrismaClient();
 const passwordSaltRounds = 12;
@@ -97,6 +98,7 @@ async function seedUsers(): Promise<void> {
       password,
       name: adminUser.name,
       role: UserRole.ADMIN,
+      permissions: ROLE_DEFAULT_PERMISSIONS[UserRole.ADMIN],
       isActive: true,
     },
     create: {
@@ -104,6 +106,7 @@ async function seedUsers(): Promise<void> {
       password,
       name: adminUser.name,
       role: UserRole.ADMIN,
+      permissions: ROLE_DEFAULT_PERMISSIONS[UserRole.ADMIN],
       isActive: true,
     },
   });

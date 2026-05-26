@@ -1,4 +1,6 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { PERMISSIONS } from '../features/auth/permissions';
+import { PermissionRoute } from './layout/PermissionRoute';
 import { AdminLayout } from './layout/AdminLayout';
 import { ProtectedRoute } from './layout/ProtectedRoute';
 import { AssetsPage } from '../pages/assets/AssetsPage';
@@ -22,12 +24,63 @@ export const router = createBrowserRouter([
       {
         element: <AdminLayout />,
         children: [
-          { path: 'dashboard', element: <DashboardPage /> },
-          { path: 'channels', element: <ChannelsPage /> },
-          { path: 'assets', element: <AssetsPage /> },
-          { path: 'schedules', element: <SchedulesPage /> },
-          { path: 'users', element: <UsersPage /> },
-          { path: 'audit-logs', element: <AuditLogsPage /> },
+          {
+            path: 'dashboard',
+            element: (
+              <PermissionRoute
+                permissions={[
+                  PERMISSIONS.DASHBOARD_VIEW,
+                  PERMISSIONS.CHANNELS_VIEW,
+                  PERMISSIONS.ASSETS_VIEW,
+                  PERMISSIONS.SCHEDULES_VIEW,
+                  PERMISSIONS.OPERATIONS_VIEW,
+                ]}
+                requireAll
+              >
+                <DashboardPage />
+              </PermissionRoute>
+            ),
+          },
+          {
+            path: 'channels',
+            element: (
+              <PermissionRoute permissions={[PERMISSIONS.CHANNELS_VIEW]}>
+                <ChannelsPage />
+              </PermissionRoute>
+            ),
+          },
+          {
+            path: 'assets',
+            element: (
+              <PermissionRoute permissions={[PERMISSIONS.ASSETS_VIEW]}>
+                <AssetsPage />
+              </PermissionRoute>
+            ),
+          },
+          {
+            path: 'schedules',
+            element: (
+              <PermissionRoute permissions={[PERMISSIONS.SCHEDULES_VIEW]}>
+                <SchedulesPage />
+              </PermissionRoute>
+            ),
+          },
+          {
+            path: 'users',
+            element: (
+              <PermissionRoute permissions={[PERMISSIONS.USERS_VIEW]}>
+                <UsersPage />
+              </PermissionRoute>
+            ),
+          },
+          {
+            path: 'audit-logs',
+            element: (
+              <PermissionRoute permissions={[PERMISSIONS.AUDIT_VIEW]}>
+                <AuditLogsPage />
+              </PermissionRoute>
+            ),
+          },
         ],
       },
     ],

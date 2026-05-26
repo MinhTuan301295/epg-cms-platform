@@ -30,6 +30,7 @@ model User {
   password                 String
   name                     String?
   role                     UserRole           @default(VIEWER)
+  permissions              String[]           @default([]) @map("permissions")
   isActive                 Boolean            @default(true) @map("is_active")
   createdAt                DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)

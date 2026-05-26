@@ -48,6 +48,7 @@ export class ScheduleWarningDto {
   message!: string;
   from!: Date;
   to!: Date;
+  scheduleId?: string;
 }
 
 export class ScheduleMutationResponseDto {

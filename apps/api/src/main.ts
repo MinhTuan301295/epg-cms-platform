@@ -1,19 +1,32 @@
 import 'reflect-metadata';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import compression from 'compression';
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
   const port = configService.get<number>('API_PORT', 3001);
+  const uploadsDir = join(process.cwd(), 'uploads');
 
-  app.use(helmet());
+  mkdirSync(uploadsDir, { recursive: true });
+
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: {
+        policy: 'cross-origin',
+      },
+    }),
+  );
   app.use(compression());
+  app.useStaticAssets(uploadsDir, { prefix: '/uploads/' });
   app.enableCors({
     origin: configService.get<string>('CORS_ORIGIN', '*'),
   });

@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { CACHE_TTL_SECONDS } from '../../cache/cache.constants';
 import { CacheKeyUtil } from '../../cache/cache-key.util';
 import { PrismaService } from '../../database/prisma.service';
+import { ApiCacheMetricsService } from '../operations/api-cache-metrics.service';
 import { RedisService } from '../../redis/redis.service';
 import type { QueryPublicChannelsDto } from './dto/query-public-channels.dto';
 import type { QueryPublicSchedulesDto } from './dto/query-public-schedules.dto';
@@ -11,6 +12,8 @@ import type { QueryPublicSchedulesDto } from './dto/query-public-schedules.dto';
 const publicScheduleLimit = 200;
 const cacheHitLogPrefix = '[CACHE HIT]';
 const cacheMissLogPrefix = '[CACHE MISS]';
+const publicChannelsMetricKey = 'public_channels';
+const publicSchedulesMetricKey = 'public_schedules';
 
 @Injectable()
 export class PublicSchedulesService {
@@ -19,132 +22,153 @@ export class PublicSchedulesService {
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
     @Inject(RedisService) private readonly redisService: RedisService,
+    @Inject(ApiCacheMetricsService) private readonly apiCacheMetricsService: ApiCacheMetricsService,
   ) {}
 
   async getPublicChannels(query: QueryPublicChannelsDto) {
-    const cacheKey = CacheKeyUtil.publicChannels({
-      activeOnly: query.activeOnly ?? true,
-      search: query.search?.trim(),
-    });
-    const cachedResponse = await this.getCachedResponse(cacheKey, 'public channels');
+    const startedAt = Date.now();
 
-    if (cachedResponse) {
-      return cachedResponse;
-    }
+    try {
+      const cacheKey = CacheKeyUtil.publicChannels({
+        activeOnly: query.activeOnly ?? true,
+        search: query.search?.trim(),
+      });
+      const cachedResponse = await this.getCachedResponse(
+        cacheKey,
+        'public channels',
+        publicChannelsMetricKey,
+      );
 
-    const activeOnly = query.activeOnly ?? true;
-    const where: Prisma.ChannelWhereInput = {};
-    const search = query.search?.trim();
+      if (cachedResponse) {
+        return cachedResponse;
+      }
 
-    if (activeOnly) {
-      where.isActive = true;
-    }
+      const activeOnly = query.activeOnly ?? true;
+      const where: Prisma.ChannelWhereInput = {};
+      const search = query.search?.trim();
 
-    if (search) {
-      where.OR = [
-        {
-          name: {
-            contains: search,
-            mode: 'insensitive',
+      if (activeOnly) {
+        where.isActive = true;
+      }
+
+      if (search) {
+        where.OR = [
+          {
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
           },
-        },
-        {
-          epgId: {
-            contains: search,
-            mode: 'insensitive',
+          {
+            epgId: {
+              contains: search,
+              mode: 'insensitive',
+            },
           },
+        ];
+      }
+
+      const channels = await this.prismaService.channel.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          epgId: true,
+          logoUrl: true,
         },
-      ];
+        orderBy: {
+          name: 'asc',
+        },
+      });
+
+      const response = {
+        data: channels,
+      };
+
+      await this.setCachedResponse(
+        cacheKey,
+        response,
+        CACHE_TTL_SECONDS.PUBLIC_CHANNELS,
+        'public channels',
+      );
+
+      return response;
+    } finally {
+      this.apiCacheMetricsService.recordRequestDuration(publicChannelsMetricKey, Date.now() - startedAt);
     }
-
-    const channels = await this.prismaService.channel.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        epgId: true,
-        logoUrl: true,
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
-
-    const response = {
-      data: channels,
-    };
-
-    await this.setCachedResponse(
-      cacheKey,
-      response,
-      CACHE_TTL_SECONDS.PUBLIC_CHANNELS,
-      'public channels',
-    );
-
-    return response;
   }
 
   async getPublicSchedules(query: QueryPublicSchedulesDto) {
-    const cacheKey = CacheKeyUtil.publicSchedules({
-      channelId: query.channelId,
-      date: query.date,
-      from: query.from,
-      to: query.to,
-    });
-    const cachedResponse = await this.getCachedResponse(cacheKey, 'public schedules');
+    const startedAt = Date.now();
 
-    if (cachedResponse) {
-      return cachedResponse;
+    try {
+      const cacheKey = CacheKeyUtil.publicSchedules({
+        channelId: query.channelId,
+        date: query.date,
+        from: query.from,
+        to: query.to,
+      });
+      const cachedResponse = await this.getCachedResponse(
+        cacheKey,
+        'public schedules',
+        publicSchedulesMetricKey,
+      );
+
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      const where = this.buildScheduleWhere(query);
+
+      const schedules = await this.prismaService.schedule.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          startTime: true,
+          stopTime: true,
+          duration: true,
+          status: true,
+          channel: {
+            select: {
+              id: true,
+              name: true,
+              epgId: true,
+              logoUrl: true,
+            },
+          },
+          asset: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              duration: true,
+              posterUrl: true,
+              thumbnailUrl: true,
+            },
+          },
+        },
+        orderBy: {
+          startTime: 'asc',
+        },
+        take: publicScheduleLimit,
+      });
+
+      const response = {
+        data: schedules,
+      };
+
+      await this.setCachedResponse(
+        cacheKey,
+        response,
+        CACHE_TTL_SECONDS.PUBLIC_SCHEDULES,
+        'public schedules',
+      );
+
+      return response;
+    } finally {
+      this.apiCacheMetricsService.recordRequestDuration(publicSchedulesMetricKey, Date.now() - startedAt);
     }
-
-    const where = this.buildScheduleWhere(query);
-
-    const schedules = await this.prismaService.schedule.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        startTime: true,
-        stopTime: true,
-        duration: true,
-        status: true,
-        channel: {
-          select: {
-            id: true,
-            name: true,
-            epgId: true,
-            logoUrl: true,
-          },
-        },
-        asset: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            duration: true,
-            posterUrl: true,
-            thumbnailUrl: true,
-          },
-        },
-      },
-      orderBy: {
-        startTime: 'asc',
-      },
-      take: publicScheduleLimit,
-    });
-
-    const response = {
-      data: schedules,
-    };
-
-    await this.setCachedResponse(
-      cacheKey,
-      response,
-      CACHE_TTL_SECONDS.PUBLIC_SCHEDULES,
-      'public schedules',
-    );
-
-    return response;
   }
 
   private buildScheduleWhere(query: QueryPublicSchedulesDto): Prisma.ScheduleWhereInput {
@@ -225,20 +249,24 @@ export class PublicSchedulesService {
   private async getCachedResponse<TResponse>(
     key: string,
     label: string,
+    metricKey: 'public_channels' | 'public_schedules',
   ): Promise<TResponse | null> {
     const cached = await this.redisService.get(key);
 
     if (!cached) {
       this.logger.debug(`${cacheMissLogPrefix} ${label}`);
+      this.apiCacheMetricsService.recordCacheMiss(metricKey);
       return null;
     }
 
     try {
       this.logger.debug(`${cacheHitLogPrefix} ${label}`);
+      this.apiCacheMetricsService.recordCacheHit(metricKey);
       return JSON.parse(cached) as TResponse;
     } catch {
       await this.redisService.del(key);
       this.logger.warn(`Invalid cached JSON cleared for ${label}`);
+      this.apiCacheMetricsService.recordCacheMiss(metricKey);
       return null;
     }
   }

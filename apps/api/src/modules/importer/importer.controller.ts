@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { PERMISSIONS } from '../../common/permissions/permissions.constants';
 import type { RequestUser } from '../../common/types/request-user.type';
 import { ImportApplyDto } from './dto/import-apply.dto';
 import { ImportCsvDto } from './dto/import-csv.dto';
@@ -14,13 +14,13 @@ import { ImporterService } from './importer.service';
 
 @ApiTags('Importer')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.EDITOR)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('importer')
 export class ImporterController {
   constructor(@Inject(ImporterService) private readonly importerService: ImporterService) {}
 
   @Post('xmltv/preview')
+  @Permissions(PERMISSIONS.IMPORTER_VIEW)
   @ApiOperation({ summary: 'Preview XMLTV import' })
   @ApiBody({ type: ImportXmltvDto })
   previewXmltv(@Body() dto: ImportXmltvDto) {
@@ -28,6 +28,7 @@ export class ImporterController {
   }
 
   @Post('csv/preview')
+  @Permissions(PERMISSIONS.IMPORTER_VIEW)
   @ApiOperation({ summary: 'Preview CSV import' })
   @ApiBody({ type: ImportCsvDto })
   previewCsv(@Body() dto: ImportCsvDto) {
@@ -35,6 +36,7 @@ export class ImporterController {
   }
 
   @Post('external/preview')
+  @Permissions(PERMISSIONS.IMPORTER_VIEW)
   @ApiOperation({ summary: 'Preview external EPG API import' })
   @ApiBody({ type: ImportExternalApiDto })
   previewExternal(@Body() dto: ImportExternalApiDto) {
@@ -42,6 +44,7 @@ export class ImporterController {
   }
 
   @Post('apply')
+  @Permissions(PERMISSIONS.IMPORTER_RUN)
   @ApiOperation({ summary: 'Apply importer preview candidates' })
   @ApiBody({ type: ImportApplyDto })
   apply(@Body() dto: ImportApplyDto, @CurrentUser() currentUser?: RequestUser) {
@@ -49,6 +52,7 @@ export class ImporterController {
   }
 
   @Get('jobs/:id')
+  @Permissions(PERMISSIONS.IMPORTER_VIEW)
   @ApiOperation({ summary: 'Get importer job status' })
   getJob(@Param('id') id: string) {
     return this.importerService.getJob(id);

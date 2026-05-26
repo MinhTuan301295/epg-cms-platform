@@ -49,6 +49,28 @@ export class QueueService implements OnModuleDestroy {
     return queue.getJob(jobId);
   }
 
+  async getQueueCounts(queueName: string) {
+    const queue = this.getQueue(queueName);
+    return queue.getJobCounts('waiting', 'active', 'delayed', 'completed', 'failed', 'paused');
+  }
+
+  async getRecentJobs(queueName: string, limit = 5) {
+    const queue = this.getQueue(queueName);
+    const jobs = await queue.getJobs(['active', 'waiting', 'delayed', 'failed', 'completed'], 0, Math.max(limit - 1, 0), false);
+
+    return Promise.all(
+      jobs.map(async (job) => ({
+        id: String(job.id),
+        name: job.name,
+        state: await job.getState(),
+        attemptsMade: job.attemptsMade,
+        timestamp: job.timestamp,
+        finishedOn: job.finishedOn ?? null,
+        failedReason: job.failedReason ?? null,
+      })),
+    );
+  }
+
   async onModuleDestroy(): Promise<void> {
     await Promise.all([...this.queues.values()].map((queue) => queue.close()));
   }

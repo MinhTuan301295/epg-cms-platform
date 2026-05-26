@@ -61,3 +61,4 @@ vite.config.d.ts
 docker-data/
 postgres-data/
 redis-data/
+uploads/
