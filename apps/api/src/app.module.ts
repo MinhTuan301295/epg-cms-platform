@@ -8,6 +8,7 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { AssetsModule } from './modules/assets/assets.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChannelsModule } from './modules/channels/channels.module';
+import { ImporterModule } from './modules/importer/importer.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 import { UsersModule } from './modules/users/users.module';
@@ -36,6 +37,7 @@ import { RedisModule } from './redis/redis.module';
     ChannelsModule,
     AssetsModule,
     SchedulesModule,
+    ImporterModule,
     PublicApiModule,
     AuditLogsModule,
   ],

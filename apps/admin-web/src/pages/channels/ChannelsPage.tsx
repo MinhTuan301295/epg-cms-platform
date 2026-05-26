@@ -1,3 +1,4 @@
+import { PlusOutlined } from '@ant-design/icons';
 import { Button, Space, Table, Typography } from 'antd';
 
 export function ChannelsPage() {
@@ -5,9 +6,19 @@ export function ChannelsPage() {
     <section>
       <Space className="page-toolbar" align="center" wrap>
         <Typography.Title level={2}>Channels</Typography.Title>
-        <Button type="primary">New Channel</Button>
+        <Button type="primary" icon={<PlusOutlined />}>
+          New Channel
+        </Button>
       </Space>
-      <Table rowKey="id" columns={[{ title: 'Name', dataIndex: 'name' }]} dataSource={[]} />
+      <Table
+        rowKey="id"
+        columns={[
+          { title: 'Name', dataIndex: 'name' },
+          { title: 'EPG ID', dataIndex: 'epgId' },
+          { title: 'Status', dataIndex: 'status' },
+        ]}
+        dataSource={[]}
+      />
     </section>
   );
 }

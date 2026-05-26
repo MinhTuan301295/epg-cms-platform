@@ -1,1 +1,1 @@
-export {};
+export { ScheduleTimeline } from './components/ScheduleTimeline';

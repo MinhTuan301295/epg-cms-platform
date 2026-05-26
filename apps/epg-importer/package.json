@@ -3,10 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "mkdir -p dist && echo \"epg-importer build placeholder\"",
-    "dev": "echo \"epg-importer app not implemented yet\"",
-    "lint": "echo \"epg-importer lint placeholder\"",
-    "typecheck": "echo \"epg-importer typecheck placeholder\"",
+    "dev": "tsx src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "csv-parse": "^6.2.1",
+    "dotenv": "^16.6.1",
+    "fast-xml-parser": "^5.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.32",
+    "tsx": "^4.20.3",
+    "typescript": "5.7.2"
   }
 }

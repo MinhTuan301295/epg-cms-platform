@@ -1,5 +1,6 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { AdminLayout } from './layout/AdminLayout';
+import { ProtectedRoute } from './layout/ProtectedRoute';
 import { AssetsPage } from '../pages/assets/AssetsPage';
 import { AuditLogsPage } from '../pages/audit-logs/AuditLogsPage';
 import { ChannelsPage } from '../pages/channels/ChannelsPage';
@@ -15,15 +16,20 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <AdminLayout />,
+    element: <ProtectedRoute />,
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: 'dashboard', element: <DashboardPage /> },
-      { path: 'channels', element: <ChannelsPage /> },
-      { path: 'assets', element: <AssetsPage /> },
-      { path: 'schedules', element: <SchedulesPage /> },
-      { path: 'users', element: <UsersPage /> },
-      { path: 'audit-logs', element: <AuditLogsPage /> },
+      {
+        element: <AdminLayout />,
+        children: [
+          { path: 'dashboard', element: <DashboardPage /> },
+          { path: 'channels', element: <ChannelsPage /> },
+          { path: 'assets', element: <AssetsPage /> },
+          { path: 'schedules', element: <SchedulesPage /> },
+          { path: 'users', element: <UsersPage /> },
+          { path: 'audit-logs', element: <AuditLogsPage /> },
+        ],
+      },
     ],
   },
 ]);

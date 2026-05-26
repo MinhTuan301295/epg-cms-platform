@@ -3,10 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "mkdir -p dist && echo \"worker build placeholder\"",
-    "dev": "echo \"worker app not implemented yet\"",
-    "lint": "echo \"worker lint placeholder\"",
-    "typecheck": "echo \"worker typecheck placeholder\"",
+    "dev": "tsx src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "bullmq": "^5.56.0",
+    "dotenv": "^16.6.1",
+    "ioredis": "^5.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.32",
+    "prisma": "6.19.3",
+    "tsx": "^4.20.3",
+    "typescript": "5.7.2"
   }
 }

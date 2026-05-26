@@ -1,0 +1,305 @@
+
+
+⸻
+
+Phase 15 — Production Readiness
+
+Setup:
+
+* Docker optimization
+* Nginx reverse proxy
+* CI/CD
+* Kubernetes manifests
+* Terraform infra
+* Monitoring
+
+Monitoring stack:
+
+* Prometheus
+* Grafana
+* Loki
+
+Security:
+
+* Helmet
+* CORS
+* Rate limiting
+* Validation
+* Logging
+
+⸻
+
+Recommended Actual Development Order
+
+1. Prisma schema
+2. Database migration
+3. Seed admin account
+4. Auth + RBAC
+5. Channels CRUD
+6. Assets CRUD
+7. Schedules CRUD
+8. Schedule validation engine
+9. Public APIs
+10. Redis cache
+11. Frontend CMS
+12. Timeline UI
+13. Publish workflow
+14. Worker + queues
+15. Importer system
+16. Production deployment
+
+
+
+
+# =====================================================
+# 0. START CLEAN
+# =====================================================
+
+cd /Users/hmk/Documents/epg-cms-platform
+
+# dùng Node 20 cho Prisma ổn định trên Mac M1
+nvm use 20
+
+# =====================================================
+# 1. START DATABASE + REDIS
+# =====================================================
+
+docker compose down -v
+
+docker compose up -d postgres redis
+
+docker ps
+
+# phải thấy:
+# epg-cms-postgres
+# epg-cms-redis
+
+# =====================================================
+# 2. VERIFY POSTGRES
+# =====================================================
+
+docker exec -it epg-cms-postgres psql -U epg -d epg_cms
+
+# nếu vào được:
+# epg_cms=#
+
+# thoát:
+\q
+
+# =====================================================
+# 3. CHECK API ENV
+# =====================================================
+
+cat apps/api/.env
+
+# phải là:
+
+# DATABASE_URL="postgresql://epg:epg123@localhost:5433/epg_cms?schema=public"
+# JWT_SECRET="change-me"
+# JWT_EXPIRES_IN="7d"
+# REDIS_HOST="localhost"
+# REDIS_PORT="6379"
+
+# =====================================================
+# 4. INSTALL DEPENDENCIES
+# =====================================================
+
+rm -rf node_modules
+rm -rf apps/api/node_modules
+rm -rf apps/admin-web/node_modules
+rm -rf apps/worker/node_modules
+
+pnpm install
+
+# =====================================================
+# 5. GENERATE PRISMA CLIENT
+# =====================================================
+
+cd apps/api
+
+export PRISMA_CLI_QUERY_ENGINE_TYPE=binary
+export PRISMA_CLIENT_ENGINE_TYPE=binary
+
+pnpm prisma generate
+
+# =====================================================
+# 6. RUN DATABASE MIGRATION
+# =====================================================
+
+pnpm prisma migrate dev --name init_epg_core
+
+# =====================================================
+# 7. SEED DATABASE
+# =====================================================
+
+pnpm db:seed
+
+# =====================================================
+# 8. VERIFY TABLES
+# =====================================================
+
+cd /Users/hmk/Documents/epg-cms-platform
+
+docker exec -it epg-cms-postgres psql -U epg -d epg_cms -c "\dt"
+
+# phải thấy:
+# users
+# channels
+# assets
+# schedules
+# schedule_audit_logs
+
+# =====================================================
+# 9. VERIFY ADMIN USER
+# =====================================================
+
+docker exec -it epg-cms-postgres psql -U epg -d epg_cms -c "select email, role from users;"
+
+# phải thấy:
+# admin@epg.local
+
+# =====================================================
+# 10. START API
+# =====================================================
+
+cd apps/api
+
+export DATABASE_URL="postgresql://epg:epg123@localhost:5433/epg_cms?schema=public"
+
+pnpm dev
+
+# nếu OK sẽ thấy:
+# Nest application successfully started
+
+# API:
+# http://localhost:3001
+
+# =====================================================
+# 11. TEST LOGIN API
+# =====================================================
+
+curl -X POST http://localhost:3001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@epg.local","password":"admin123"}'
+
+# phải trả về:
+# accessToken
+
+# =====================================================
+# 12. START FRONTEND
+# =====================================================
+
+# terminal mới
+
+cd /Users/hmk/Documents/epg-cms-platform
+
+cat apps/admin-web/.env
+
+# phải có:
+# VITE_API_BASE_URL=http://localhost:3001/api/v1
+
+cd apps/admin-web
+
+pnpm dev
+
+# frontend:
+# http://localhost:3000
+
+# =====================================================
+# 13. LOGIN CMS
+# =====================================================
+
+# email:
+# admin@epg.local
+
+# password:
+# admin123
+
+# =====================================================
+# 14. TEST CORE FLOW
+# =====================================================
+
+# test:
+# - login
+# - channels CRUD
+# - assets CRUD
+# - schedules CRUD
+# - publish schedule
+# - public API
+# - timeline UI
+
+# =====================================================
+# 15. TEST PUBLIC API
+# =====================================================
+
+curl http://localhost:3001/api/v1/public/channels
+
+curl http://localhost:3001/api/v1/public/schedules
+
+# =====================================================
+# 16. START WORKER (IF PHASE 13 DONE)
+# =====================================================
+
+# terminal mới
+
+cd /Users/hmk/Documents/epg-cms-platform/apps/worker
+
+pnpm dev
+
+# =====================================================
+# 17. TEST QUEUE
+# =====================================================
+
+# create/update/publish schedule
+
+# worker terminal phải log:
+# cache invalidation
+# timeline snapshot
+# publish jobs
+
+# =====================================================
+# 18. COMMON ISSUE CHECK
+# =====================================================
+
+# Prisma denied access:
+# -> sai DATABASE_URL
+# -> local postgres conflict
+# -> phải dùng port 5433
+
+# Prisma crash:
+# -> dùng Node 20
+# -> export binary engine
+
+# Login fail:
+# -> seed chưa chạy
+# -> frontend sai VITE_API_BASE_URL
+
+# API connect fail:
+# -> backend chưa start
+# -> port sai
+
+# =====================================================
+# FINAL LOCAL URLs
+# =====================================================
+
+# Frontend CMS
+http://localhost:3000
+
+# API
+http://localhost:3001/api/v1
+
+# Public API
+http://localhost:3001/api/v1/public/schedules
+
+# Health
+http://localhost:3001/api/v1/health
+
+# =====================================================
+# ADMIN ACCOUNT
+# =====================================================
+
+# email:
+admin@epg.local
+
+# password:
+admin123

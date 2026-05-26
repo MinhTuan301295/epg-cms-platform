@@ -9,6 +9,8 @@
   },
   "scripts": {
     "dev": "turbo run dev --parallel",
+    "dev:worker": "pnpm --filter @epg-cms/worker dev",
+    "worker:dev": "pnpm --filter @epg-cms/worker dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml,css}\"",
