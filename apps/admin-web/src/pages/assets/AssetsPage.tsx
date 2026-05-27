@@ -1,8 +1,7 @@
-import { EditOutlined, FilterOutlined, MoreOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, FilterOutlined, MoreOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import {
   Alert,
   App as AntdApp,
-  Avatar,
   Button,
   Form,
   Input,
@@ -13,7 +12,9 @@ import {
   Space,
   Table,
   Tag,
+  Upload,
 } from 'antd';
+import type { UploadProps } from 'antd';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useState } from 'react';
@@ -46,6 +47,7 @@ interface AssetsResponse {
 
 type AssetTypeFilter = 'ALL' | 'LIVE' | 'VOD';
 const defaultPageSize = 10;
+type ImageTarget = 'poster' | 'thumbnail';
 
 interface CreateAssetPayload {
   name: string;
@@ -94,6 +96,9 @@ export function AssetsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [imageUploadingTarget, setImageUploadingTarget] = useState<ImageTarget | null>(null);
+  const [posterPreviewUrl, setPosterPreviewUrl] = useState<string | null>(null);
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
 
   const {
     data: assetsResponse,
@@ -227,6 +232,8 @@ export function AssetsPage() {
       posterUrl: undefined,
       thumbnailUrl: undefined,
     });
+    setPosterPreviewUrl(null);
+    setThumbnailPreviewUrl(null);
     setModalOpen(true);
   };
 
@@ -242,8 +249,66 @@ export function AssetsPage() {
       posterUrl: asset.posterUrl || undefined,
       thumbnailUrl: asset.thumbnailUrl || undefined,
     });
+    setPosterPreviewUrl(asset.posterUrl || null);
+    setThumbnailPreviewUrl(asset.thumbnailUrl || null);
     setModalOpen(true);
   };
+
+  const canUploadAssetImage = modalMode === 'create' ? canCreateAsset : canUpdateAsset;
+
+  const uploadAssetImage = (target: ImageTarget): NonNullable<UploadProps['customRequest']> =>
+    async (options) => {
+      const file = options.file;
+
+      if (!(file instanceof File)) {
+        options.onError?.(new Error('Invalid file upload request'));
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      setImageUploadingTarget(target);
+
+      try {
+        const response = await apiClient.post<{ imageUrl: string }>('/assets/upload-image', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        const imageUrl = response.data.imageUrl;
+
+        if (target === 'poster') {
+          assetForm.setFieldValue('posterUrl', imageUrl);
+          setPosterPreviewUrl(imageUrl);
+        } else {
+          assetForm.setFieldValue('thumbnailUrl', imageUrl);
+          setThumbnailPreviewUrl(imageUrl);
+        }
+
+        options.onSuccess?.(response.data);
+        message.success(`${target === 'poster' ? 'Poster' : 'Thumbnail'} uploaded successfully`);
+      } catch (uploadError: unknown) {
+        const responseMessage =
+          typeof uploadError === 'object' &&
+            uploadError !== null &&
+            'response' in uploadError &&
+            typeof (uploadError as { response?: { data?: { message?: string | string[] } } }).response?.data
+              ?.message !== 'undefined'
+            ? (uploadError as { response?: { data?: { message?: string | string[] } } }).response?.data?.message
+            : undefined;
+
+        const normalizedMessage = Array.isArray(responseMessage)
+          ? responseMessage.join(', ')
+          : responseMessage;
+
+        const errorMessage = normalizedMessage || 'Image upload failed';
+        options.onError?.(new Error(errorMessage));
+        message.error(errorMessage);
+      } finally {
+        setImageUploadingTarget(null);
+      }
+    };
 
   const handleCreateOrUpdateAsset = async () => {
     if (modalMode === 'create' && !canCreateAsset) {
@@ -253,6 +318,11 @@ export function AssetsPage() {
 
     if (modalMode === 'edit' && !canUpdateAsset) {
       message.error('You do not have permission to update assets');
+      return;
+    }
+
+    if (imageUploadingTarget) {
+      message.warning('Please wait until image upload is complete');
       return;
     }
 
@@ -362,14 +432,17 @@ export function AssetsPage() {
               sorter: (a: Asset, b: Asset) => a.name.localeCompare(b.name),
               render: (_: string, record: Asset) => (
                 <div className="asset-name-cell">
-                  <Avatar
-                    shape="square"
-                    size={36}
-                    src={record.thumbnailUrl || record.posterUrl}
-                    className="asset-thumb-avatar"
-                  >
-                    {getAssetInitials(record.name)}
-                  </Avatar>
+                  <div className="asset-thumb-box">
+                    {record.thumbnailUrl || record.posterUrl ? (
+                      <img
+                        src={record.thumbnailUrl || record.posterUrl}
+                        alt={record.name}
+                        className="asset-thumb-img"
+                      />
+                    ) : (
+                      <span className="asset-thumb-fallback">{getAssetInitials(record.name)}</span>
+                    )}
+                  </div>
                   <span className="asset-name-text">{record.name}</span>
                 </div>
               ),
@@ -461,6 +534,14 @@ export function AssetsPage() {
       <Modal
         title={modalMode === 'edit' ? 'Edit Asset' : 'Create Asset'}
         open={modalOpen}
+        width={980}
+        styles={{
+          body: {
+            maxHeight: '72vh',
+            overflowY: 'auto',
+            paddingRight: 8,
+          },
+        }}
         onCancel={() => {
           if (createAssetMutation.isPending || updateAssetMutation.isPending) {
             return;
@@ -469,6 +550,9 @@ export function AssetsPage() {
           setModalOpen(false);
           setEditingAsset(null);
           assetForm.resetFields();
+          setImageUploadingTarget(null);
+          setPosterPreviewUrl(null);
+          setThumbnailPreviewUrl(null);
         }}
         onOk={() => void handleCreateOrUpdateAsset()}
         okText={modalMode === 'edit' ? 'Update' : 'Create'}
@@ -487,38 +571,137 @@ export function AssetsPage() {
           form={assetForm}
           initialValues={{ type: 'VOD', duration: 1800 }}
         >
-          <Form.Item label="Name" name="name" rules={[{ required: true, message: 'Name is required' }]}>
-            <Input placeholder="Phim Hành Động" maxLength={180} />
-          </Form.Item>
+          <div className="asset-form-grid">
+            <Form.Item
+              label="Name"
+              name="name"
+              className="asset-form-item-full"
+              rules={[{ required: true, message: 'Name is required' }]}
+            >
+              <Input placeholder="Phim Hành Động" maxLength={180} />
+            </Form.Item>
 
-          <Form.Item label="Type" name="type" rules={[{ required: true, message: 'Type is required' }]}>
-            <Select
-              options={[
-                { value: 'LIVE', label: 'LIVE' },
-                { value: 'VOD', label: 'VOD' },
-              ]}
-            />
-          </Form.Item>
+            <Form.Item label="Type" name="type" rules={[{ required: true, message: 'Type is required' }]}>
+              <Select
+                options={[
+                  { value: 'LIVE', label: 'LIVE' },
+                  { value: 'VOD', label: 'VOD' },
+                ]}
+              />
+            </Form.Item>
 
-          <Form.Item label="Duration (seconds)" name="duration" rules={[{ required: true, message: 'Duration is required' }]}>
-            <InputNumber min={1} step={60} style={{ width: '100%' }} />
-          </Form.Item>
+            <Form.Item label="Duration (seconds)" name="duration" rules={[{ required: true, message: 'Duration is required' }]}>
+              <InputNumber min={1} step={60} style={{ width: '100%' }} />
+            </Form.Item>
 
-          <Form.Item label="HLS URL" name="hlsUrl" rules={[{ type: 'url', warningOnly: true, message: 'Invalid HLS URL' }]}>
-            <Input placeholder="https://example.com/master.m3u8" />
-          </Form.Item>
+            <Form.Item label="HLS URL" name="hlsUrl" rules={[{ type: 'url', warningOnly: true, message: 'Invalid HLS URL' }]}>
+              <Input placeholder="https://example.com/master.m3u8" />
+            </Form.Item>
 
-          <Form.Item label="DASH URL" name="dashUrl" rules={[{ type: 'url', warningOnly: true, message: 'Invalid DASH URL' }]}>
-            <Input placeholder="https://example.com/manifest.mpd" />
-          </Form.Item>
+            <Form.Item label="DASH URL" name="dashUrl" rules={[{ type: 'url', warningOnly: true, message: 'Invalid DASH URL' }]}>
+              <Input placeholder="https://example.com/manifest.mpd" />
+            </Form.Item>
 
-          <Form.Item label="Poster URL" name="posterUrl" rules={[{ type: 'url', warningOnly: true, message: 'Invalid poster URL' }]}>
-            <Input placeholder="https://example.com/poster.jpg" />
-          </Form.Item>
+            <div className="asset-media-grid">
+              <Form.Item label="Poster URL" name="posterUrl" rules={[{ type: 'url', warningOnly: true, message: 'Invalid poster URL' }]}>
+                <Input
+                  placeholder="https://example.com/poster.jpg"
+                  onChange={(event) => setPosterPreviewUrl(event.target.value || null)}
+                />
+              </Form.Item>
 
-          <Form.Item label="Thumbnail URL" name="thumbnailUrl" rules={[{ type: 'url', warningOnly: true, message: 'Invalid thumbnail URL' }]}>
-            <Input placeholder="https://example.com/thumb.jpg" />
-          </Form.Item>
+              <Form.Item label="Thumbnail URL" name="thumbnailUrl" rules={[{ type: 'url', warningOnly: true, message: 'Invalid thumbnail URL' }]}>
+                <Input
+                  placeholder="https://example.com/thumb.jpg"
+                  onChange={(event) => setThumbnailPreviewUrl(event.target.value || null)}
+                />
+              </Form.Item>
+
+              <Form.Item label="Upload Poster">
+                <Space align="center" wrap className="asset-upload-row">
+                  <div className="channel-logo-box channel-logo-box-lg">
+                    {posterPreviewUrl ? (
+                      <img
+                        src={posterPreviewUrl}
+                        alt="Poster preview"
+                        className="channel-logo-img"
+                      />
+                    ) : (
+                      <span className="channel-logo-initial">POSTER</span>
+                    )}
+                  </div>
+                  <Upload
+                    accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                    maxCount={1}
+                    showUploadList={false}
+                    customRequest={uploadAssetImage('poster')}
+                    disabled={!canUploadAssetImage}
+                  >
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={imageUploadingTarget === 'poster'}
+                      disabled={!canUploadAssetImage}
+                    >
+                      Upload
+                    </Button>
+                  </Upload>
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    disabled={!canUploadAssetImage || (!posterPreviewUrl && !assetForm.getFieldValue('posterUrl'))}
+                    onClick={() => {
+                      assetForm.setFieldValue('posterUrl', undefined);
+                      setPosterPreviewUrl(null);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </Space>
+              </Form.Item>
+
+              <Form.Item label="Upload Thumbnail">
+                <Space align="center" wrap className="asset-upload-row">
+                  <div className="channel-logo-box channel-logo-box-lg">
+                    {thumbnailPreviewUrl ? (
+                      <img
+                        src={thumbnailPreviewUrl}
+                        alt="Thumbnail preview"
+                        className="channel-logo-img"
+                      />
+                    ) : (
+                      <span className="channel-logo-initial">THUMB</span>
+                    )}
+                  </div>
+                  <Upload
+                    accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                    maxCount={1}
+                    showUploadList={false}
+                    customRequest={uploadAssetImage('thumbnail')}
+                    disabled={!canUploadAssetImage}
+                  >
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={imageUploadingTarget === 'thumbnail'}
+                      disabled={!canUploadAssetImage}
+                    >
+                      Upload
+                    </Button>
+                  </Upload>
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    disabled={!canUploadAssetImage || (!thumbnailPreviewUrl && !assetForm.getFieldValue('thumbnailUrl'))}
+                    onClick={() => {
+                      assetForm.setFieldValue('thumbnailUrl', undefined);
+                      setThumbnailPreviewUrl(null);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </Space>
+              </Form.Item>
+            </div>
+          </div>
         </Form>
       </Modal>
     </section>

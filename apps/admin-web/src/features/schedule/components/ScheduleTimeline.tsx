@@ -94,17 +94,8 @@ export function ScheduleTimeline({
           kind: string;
           asset?: Asset;
           schedule?: Schedule;
-          dragAnchorOffsetX?: number;
         }
       | undefined;
-
-    const initialRect = event.active.rect.current.initial;
-    const pointerClientX =
-      'clientX' in event.activatorEvent ? (event.activatorEvent as MouseEvent).clientX : undefined;
-    if (data && initialRect && typeof pointerClientX === 'number') {
-      const rawOffset = pointerClientX - initialRect.left;
-      data.dragAnchorOffsetX = Math.max(0, Math.min(initialRect.width, rawOffset));
-    }
 
     if (data?.kind === 'asset' && data.asset) {
       setDraggingAsset(data.asset);

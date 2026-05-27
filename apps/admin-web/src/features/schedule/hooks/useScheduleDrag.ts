@@ -31,7 +31,6 @@ interface UseScheduleDragOptions {
 interface AssetDragData {
   kind: 'asset';
   asset: Asset;
-  dragAnchorOffsetX?: number;
 }
 
 interface ScheduleDragData {
@@ -80,13 +79,7 @@ export function useScheduleDrag({
     }
 
     if (activeData.kind === 'asset') {
-      const startTime = resolveDropTime(
-        event,
-        channelId,
-        dayStart,
-        pixelsPerHour,
-        activeData.dragAnchorOffsetX,
-      );
+      const startTime = resolveDropTime(event, channelId, dayStart, pixelsPerHour);
       const snapped = applyScheduleSnap({
         schedules,
         channelId,
@@ -156,13 +149,7 @@ export function useScheduleDrag({
       const { asset } = activeData;
       const startTime = preview?.kind === 'asset'
         ? preview.startTime
-        : resolveDropTime(
-            event,
-            channelId,
-            dayStart,
-            pixelsPerHour,
-            activeData.dragAnchorOffsetX,
-          );
+        : resolveDropTime(event, channelId, dayStart, pixelsPerHour);
       const snapped = applyScheduleSnap({
         schedules,
         channelId,
@@ -218,7 +205,6 @@ function resolveDropTime(
   channelId: string,
   dayStart: Date,
   pixelsPerHour: number,
-  dragAnchorOffsetX?: number,
 ): Date {
   const row = document.querySelector<HTMLElement>(`[data-timeline-row="${channelId}"]`);
   const translatedRect = event.active.rect.current.translated ?? event.active.rect.current.initial;
@@ -228,10 +214,9 @@ function resolveDropTime(
   }
 
   const rowRect = row.getBoundingClientRect();
-  const anchorOffset = typeof dragAnchorOffsetX === 'number'
-    ? dragAnchorOffsetX
-    : translatedRect.width / 2;
-  const offsetX = translatedRect.left + anchorOffset - rowRect.left;
+  // Place preview/start-time by the left edge of the dragged card so the
+  // dotted ghost sits exactly where operators visually drop it.
+  const offsetX = translatedRect.left - rowRect.left;
 
   return pxToTime(offsetX, dayStart, pixelsPerHour);
 }

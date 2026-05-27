@@ -1,4 +1,9 @@
-import { RocketOutlined, SaveOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  RocketOutlined,
+  SaveOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import {
   Alert,
   Button,
@@ -10,12 +15,13 @@ import {
   Popconfirm,
   Select,
   Space,
+  Tooltip,
   Typography,
 } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import type { Channel, Schedule, ScheduleStatus, UpdateSchedulePayload } from '../types/schedule.type';
-import { addSeconds, formatDuration } from '../utils/timeline-time.util';
+import { formatDuration } from '../utils/timeline-time.util';
 import {
   applyEdgeSnap,
   findPreviousSchedule,
@@ -228,23 +234,33 @@ export function ScheduleDetailPanel({
             ]}
           />
         </Form.Item>
-        <Space>
-          <Button
-            type="primary"
-            htmlType="submit"
-            icon={<SaveOutlined />}
-            loading={saving}
-          >
-            Save
-          </Button>
-          <Button
-            icon={<RocketOutlined />}
-            loading={publishing}
-            disabled={!canPublish}
-            onClick={() => void onPublish(schedule.id)}
-          >
-            Publish
-          </Button>
+        <Space className="schedule-detail-actions" size={8}>
+          <Tooltip title="Save">
+            <Button
+              type="primary"
+              htmlType="submit"
+              icon={<SaveOutlined />}
+              loading={saving}
+              className="schedule-detail-action-btn"
+              aria-label="Save"
+            >
+              <span className="schedule-detail-action-label">Save</span>
+            </Button>
+          </Tooltip>
+          <Tooltip title={canPublish ? 'Publish' : 'Only DRAFT schedules can be published'}>
+            <span style={{ display: 'inline-flex' }}>
+              <Button
+                icon={<RocketOutlined />}
+                loading={publishing}
+                disabled={!canPublish}
+                onClick={() => void onPublish(schedule.id)}
+                className="schedule-detail-action-btn"
+                aria-label="Publish"
+              >
+                <span className="schedule-detail-action-label">Publish</span>
+              </Button>
+            </span>
+          </Tooltip>
           <Popconfirm
             title="Remove?"
             description="This will REMOVE and hide this item from timeline."
@@ -252,9 +268,17 @@ export function ScheduleDetailPanel({
             okButtonProps={{ danger: true, loading: deleting }}
             onConfirm={() => onDelete(schedule.id)}
           >
-            <Button danger loading={deleting}>
-              Remove
-            </Button>
+            <Tooltip title="Remove from timeline">
+              <Button
+                danger
+                loading={deleting}
+                icon={<DeleteOutlined />}
+                className="schedule-detail-action-btn"
+                aria-label="Remove"
+              >
+                <span className="schedule-detail-action-label">Remove</span>
+              </Button>
+            </Tooltip>
           </Popconfirm>
         </Space>
       </Form>

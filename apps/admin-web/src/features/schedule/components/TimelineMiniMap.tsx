@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import type { Channel, Schedule } from '../types/schedule.type';
 import { getScheduleRenderLayout } from '../utils/schedule-position.util';
 
-const RESOURCE_COLUMN_WIDTH = 180;
+const RESOURCE_COLUMN_WIDTH = 160;
 const HOURS_PER_DAY = 24;
 
 interface TimelineMiniMapProps {

@@ -9,7 +9,7 @@ import {
 import { Layout, Menu } from 'antd';
 import type { MenuProps } from 'antd';
 import type { ReactNode } from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { hasAllPermissions, hasAnyPermission, PERMISSIONS } from '../../features/auth/permissions';
 import { useAuthStore } from '../../stores/auth.store';
@@ -26,6 +26,7 @@ export function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
+  const [logoFailed, setLogoFailed] = useState(false);
   const items = useMemo<MenuProps['items']>(
     () => {
       const allItems: SidebarMenuItem[] = [
@@ -76,12 +77,12 @@ export function Sidebar() {
 
       const visibleItems = allItems
         .filter((item) =>
-        item.requiredPermissions
-          ? item.requireAll
-            ? hasAllPermissions(user, item.requiredPermissions)
-            : hasAnyPermission(user, item.requiredPermissions)
-          : true,
-      )
+          item.requiredPermissions
+            ? item.requireAll
+              ? hasAllPermissions(user, item.requiredPermissions)
+              : hasAnyPermission(user, item.requiredPermissions)
+            : true,
+        )
         .map((item) => ({
           key: item.key,
           icon: item.icon,
@@ -96,8 +97,17 @@ export function Sidebar() {
   return (
     <Layout.Sider width={220} className="admin-sidebar">
       <div className="admin-brand">
-        <span className="admin-brand-title">EPG CMS</span>
-        <small className="admin-brand-subtitle">Broadcast Ops</small>
+        {!logoFailed ? (
+          <div className="admin-brand-logo-wrap">
+            <img
+              src="/branding/logo.png"
+              alt="EPG CMS"
+              className="admin-brand-logo"
+              onError={() => setLogoFailed(true)}
+            />
+          </div>
+        ) : null}
+        <span className="admin-brand-title">FAST Channel CMS</span>
       </div>
       <Menu
         theme="dark"

@@ -1,4 +1,5 @@
 import { useDroppable } from '@dnd-kit/core';
+import { useState } from 'react';
 import type { TimelineDragPreview } from '../hooks/useScheduleDrag';
 import type { Channel, Schedule, TimelineWarning } from '../types/schedule.type';
 import { getScheduleRenderLayout } from '../utils/schedule-position.util';
@@ -48,8 +49,11 @@ export function TimelineChannelRow({
   return (
     <div className="timeline-channel-row-shell">
       <div className="timeline-channel-label">
-        <span>{channel.name}</span>
-        {channel.epgId ? <small>{channel.epgId}</small> : null}
+        <ChannelLogo channel={channel} />
+        <div className="timeline-channel-meta">
+          <span>{channel.name}</span>
+          {channel.epgId ? <small>{channel.epgId}</small> : null}
+        </div>
       </div>
       <div
         ref={setNodeRef}
@@ -89,6 +93,37 @@ export function TimelineChannelRow({
           ))
         )}
       </div>
+    </div>
+  );
+}
+
+function ChannelLogo({ channel }: { channel: Channel }) {
+  const [failed, setFailed] = useState(false);
+  const hasLogo = Boolean(channel.logoUrl) && !failed;
+
+  if (hasLogo) {
+    return (
+      <div className="timeline-channel-logo-box" aria-hidden="true">
+        <img
+          src={channel.logoUrl ?? ''}
+          alt=""
+          className="timeline-channel-logo-img"
+          onError={() => setFailed(true)}
+        />
+      </div>
+    );
+  }
+
+  const initials = channel.name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+
+  return (
+    <div className="timeline-channel-logo-box timeline-channel-logo-fallback" aria-hidden="true">
+      <span>{initials || 'TV'}</span>
     </div>
   );
 }

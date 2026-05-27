@@ -1,5 +1,6 @@
 import { Empty, Spin } from 'antd';
 import dayjs from 'dayjs';
+import type { CSSProperties } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import type { TimelineDragPreview } from '../hooks/useScheduleDrag';
 import type { Channel, Schedule, TimelineWarning } from '../types/schedule.type';
@@ -9,7 +10,7 @@ import { TimelineChannelRow } from './TimelineChannelRow';
 import { TimelineHeader } from './TimelineHeader';
 import { TimelineMiniMap } from './TimelineMiniMap';
 
-const TIMELINE_LABEL_COLUMN_WIDTH = 180;
+const TIMELINE_LABEL_COLUMN_WIDTH = 160;
 
 interface TimelineGridProps {
   channels: Channel[];
@@ -43,6 +44,14 @@ export function TimelineGrid({
 }: TimelineGridProps) {
   const labels = useMemo(() => createTimeLabels(selectedDate), [selectedDate]);
   const timelineWidth = pixelsPerHour * 24;
+  const gridInnerStyle = useMemo(
+    () =>
+      ({
+        width: timelineWidth,
+        ['--timeline-hour-width' as string]: `${pixelsPerHour}px`,
+      }) as CSSProperties,
+    [timelineWidth, pixelsPerHour],
+  );
   const [now, setNow] = useState(() => dayjs());
   const isTodayView = dayjs(selectedDate).isSame(dayjs(), 'day');
 
@@ -81,7 +90,7 @@ export function TimelineGrid({
     <div className="timeline-grid-panel">
       <Spin spinning={loading}>
         <div className="timeline-scroll">
-          <div className="timeline-grid-inner" style={{ width: timelineWidth }}>
+          <div className="timeline-grid-inner" style={gridInnerStyle}>
             <TimelineHeader labels={labels} pixelsPerHour={pixelsPerHour} />
             {typeof nowCursorLeft === 'number' && nowCursorLeft >= 0 && nowCursorLeft <= timelineWidth ? (
               <div className="timeline-now-cursor" style={{ left: nowCursorLeft + TIMELINE_LABEL_COLUMN_WIDTH }}>
@@ -108,7 +117,7 @@ export function TimelineGrid({
         {dragPreview ? (
           <div
             className="timeline-drag-guide"
-            style={{ left: dragPreview.leftPx + 180 }}
+            style={{ left: dragPreview.leftPx + TIMELINE_LABEL_COLUMN_WIDTH }}
             data-invalid={dragPreview.isOverlap}
           >
             <span>{formatTimelineTime(dragPreview.startTime)}</span>

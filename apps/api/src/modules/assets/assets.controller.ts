@@ -1,4 +1,8 @@
+import { randomUUID } from 'node:crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { extname, join } from 'node:path';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -9,9 +13,14 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiExtraModels, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Request } from 'express';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -28,6 +37,16 @@ import { UpdateAssetDto } from './dto/update-asset.dto';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('assets')
 export class AssetsController {
+  private readonly uploadDirectory = join(process.cwd(), 'uploads', 'asset-images');
+  private readonly maxImageSizeBytes = 4 * 1024 * 1024;
+  private readonly allowedImageMimeTypes = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'image/svg+xml',
+  ]);
+
   constructor(@Inject(AssetsService) private readonly assetsService: AssetsService) {}
 
   @Get()
@@ -68,5 +87,67 @@ export class AssetsController {
   @ApiOperation({ summary: 'Delete asset' })
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<AssetResponseDto> {
     return this.assetsService.remove(id);
+  }
+
+  @Post('upload-image')
+  @Permissions(PERMISSIONS.ASSETS_UPDATE)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 4 * 1024 * 1024,
+      },
+    }),
+  )
+  @ApiOperation({ summary: 'Upload asset image (poster/thumbnail)' })
+  async uploadImage(
+    @UploadedFile() file: { buffer?: Buffer; mimetype?: string; originalname?: string; size?: number } | undefined,
+    @Req() request: Request,
+  ): Promise<{ imageUrl: string }> {
+    if (!file?.buffer) {
+      throw new BadRequestException('Image file is required');
+    }
+
+    if (!file.mimetype || !this.allowedImageMimeTypes.has(file.mimetype)) {
+      throw new BadRequestException('Only JPEG, PNG, WebP, GIF, and SVG files are allowed');
+    }
+
+    if (file.size && file.size > this.maxImageSizeBytes) {
+      throw new BadRequestException('Image file must be 4MB or smaller');
+    }
+
+    const safeExtension = this.getSafeExtension(file.originalname, file.mimetype);
+    const fileName = `${randomUUID()}${safeExtension}`;
+
+    await mkdir(this.uploadDirectory, { recursive: true });
+    await writeFile(join(this.uploadDirectory, fileName), file.buffer);
+
+    const baseUrl = `${request.protocol}://${request.get('host')}`;
+
+    return {
+      imageUrl: `${baseUrl}/uploads/asset-images/${fileName}`,
+    };
+  }
+
+  private getSafeExtension(originalName: string | undefined, mimeType: string): string {
+    const extension = extname(originalName ?? '').toLowerCase();
+
+    if (extension && extension !== '.') {
+      return extension;
+    }
+
+    switch (mimeType) {
+      case 'image/jpeg':
+        return '.jpg';
+      case 'image/png':
+        return '.png';
+      case 'image/webp':
+        return '.webp';
+      case 'image/gif':
+        return '.gif';
+      case 'image/svg+xml':
+        return '.svg';
+      default:
+        return '.bin';
+    }
   }
 }
