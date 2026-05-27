@@ -114,7 +114,10 @@ export function DashboardPage() {
   const onAirChannels = snapshot?.onAirHealth.onAirChannels ?? 0;
   const missingOnAir = snapshot?.onAirHealth.channelsWithoutOnAir ?? 0;
   const noCoverage = snapshot?.onAirHealth.channelsWithoutNext6hCoverage ?? 0;
-  const queuePending = snapshot?.importerQueueHealth.queuedJobs ?? 0;
+  const publishQueue = snapshot?.importerQueueHealth.queueItems.find(
+    (queue) => queue.name === 'schedule-publish',
+  );
+  const publishQueuePending = (publishQueue?.waiting ?? 0) + (publishQueue?.delayed ?? 0);
 
   const partialCoverage = Math.max(missingOnAir - noCoverage, 0);
   const fullyCovered = Math.max(activeChannels - partialCoverage - noCoverage, 0);
@@ -122,7 +125,6 @@ export function DashboardPage() {
 
   const topRiskChannels = snapshot?.scheduleIntegrity.topRiskChannels ?? [];
   const onAirChannelSet = new Set(snapshot?.channelHealth.onAirChannelIds ?? []);
-  const coverageChannelSet = new Set(snapshot?.channelHealth.next6hCoverageChannelIds ?? []);
 
   const publishDraft = snapshot?.publishPipeline.draft ?? 0;
   const publishPublished = snapshot?.publishPipeline.published ?? 0;
@@ -132,24 +134,11 @@ export function DashboardPage() {
   const publishTotal = publishDraft + publishPublished + publishCancelled + publishScheduled + publishFailed;
 
   const riskRows = topRiskChannels.map((channel) => {
-    const score = channel.overlaps * 3 + channel.gaps * 2 + channel.invalidRanges * 3;
     const onAir = onAirChannelSet.has(channel.channelId);
-    const hasCoverage = coverageChannelSet.has(channel.channelId);
-    const coverageValue = hasCoverage ? (onAir ? 100 : 72) : onAir ? 42 : 18;
-
-    let status: 'good' | 'issue' | 'warning' = 'good';
-    if (score >= 6) {
-      status = 'issue';
-    } else if (score >= 3) {
-      status = 'warning';
-    }
 
     return {
       ...channel,
-      score,
       onAir,
-      coverageValue,
-      status,
     };
   });
 
@@ -206,8 +195,8 @@ export function DashboardPage() {
             loading={loading}
           />
           <StatCard
-            label="Publish Queue"
-            value={queuePending}
+            label="Schedule Publish Queue"
+            value={publishQueuePending}
             subLabel="Pending to publish"
             tone="blue"
             loading={loading}
@@ -246,14 +235,15 @@ export function DashboardPage() {
                       <th>On-Air</th>
                       <th>Overlaps</th>
                       <th>Gaps</th>
-                      <th>Coverage (Next 6h)</th>
-                      <th>Status</th>
+                      {/* Hidden until backend provides real per-channel coverage/status metrics */}
+                      {/* <th>Coverage (Next 6h)</th>
+                      <th>Status</th> */}
                     </tr>
                   </thead>
                   <tbody>
                     {riskRows.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="ops-risk-empty">
+                        <td colSpan={4} className="ops-risk-empty">
                           No high-risk channels detected.
                         </td>
                       </tr>
@@ -268,7 +258,8 @@ export function DashboardPage() {
                           </td>
                           <td>{row.overlaps}</td>
                           <td>{row.gaps}</td>
-                          <td>
+                          {/* Hidden until backend provides real per-channel coverage/status metrics */}
+                          {/* <td>
                             <div className="ops-coverage-meter">
                               <span style={{ width: `${row.coverageValue}%` }} />
                             </div>
@@ -277,7 +268,7 @@ export function DashboardPage() {
                             <span className={`ops-pill ops-pill-${row.status}`}>
                               {row.status === 'issue' ? 'Issue' : row.status === 'warning' ? 'Warning' : 'Good'}
                             </span>
-                          </td>
+                          </td> */}
                         </tr>
                       ))
                     )}

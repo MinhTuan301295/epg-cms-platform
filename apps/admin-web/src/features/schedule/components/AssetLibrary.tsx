@@ -4,6 +4,7 @@ import { Empty, Input, Tag, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 import type { Asset } from '../types/schedule.type';
 import { formatDuration } from '../utils/timeline-time.util';
+import { resolveMediaUrl } from '../../../utils/media-url';
 
 interface AssetLibraryProps {
   assets: Asset[];
@@ -104,7 +105,7 @@ function AssetPoster({ asset }: { asset: Asset }) {
     return (
       <div className="asset-poster">
         <img
-          src={asset.posterUrl ?? asset.thumbnailUrl ?? ''}
+          src={resolveMediaUrl(asset.posterUrl ?? asset.thumbnailUrl) ?? ''}
           alt=""
           onError={() => setImgError(true)}
         />

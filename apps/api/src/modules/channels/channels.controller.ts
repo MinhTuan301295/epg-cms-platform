@@ -13,14 +13,12 @@ import {
   Post,
   Put,
   Query,
-  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiExtraModels, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import type { Request } from 'express';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -101,7 +99,6 @@ export class ChannelsController {
   @ApiOperation({ summary: 'Upload channel logo image' })
   async uploadLogo(
     @UploadedFile() file: { buffer?: Buffer; mimetype?: string; originalname?: string; size?: number } | undefined,
-    @Req() request: Request,
   ): Promise<{ logoUrl: string }> {
     if (!file?.buffer) {
       throw new BadRequestException('Logo file is required');
@@ -121,10 +118,8 @@ export class ChannelsController {
     await mkdir(this.uploadDirectory, { recursive: true });
     await writeFile(join(this.uploadDirectory, fileName), file.buffer);
 
-    const baseUrl = `${request.protocol}://${request.get('host')}`;
-
     return {
-      logoUrl: `${baseUrl}/uploads/channel-logos/${fileName}`,
+      logoUrl: `/uploads/channel-logos/${fileName}`,
     };
   }
 

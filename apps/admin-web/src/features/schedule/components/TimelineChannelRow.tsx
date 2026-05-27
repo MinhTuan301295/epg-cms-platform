@@ -4,6 +4,7 @@ import type { TimelineDragPreview } from '../hooks/useScheduleDrag';
 import type { Channel, Schedule, TimelineWarning } from '../types/schedule.type';
 import { getScheduleRenderLayout } from '../utils/schedule-position.util';
 import { TimelineScheduleItem } from './TimelineScheduleItem';
+import { resolveMediaUrl } from '../../../utils/media-url';
 
 interface TimelineChannelRowProps {
   channel: Channel;
@@ -105,7 +106,7 @@ function ChannelLogo({ channel }: { channel: Channel }) {
     return (
       <div className="timeline-channel-logo-box" aria-hidden="true">
         <img
-          src={channel.logoUrl ?? ''}
+          src={resolveMediaUrl(channel.logoUrl) ?? ''}
           alt=""
           className="timeline-channel-logo-img"
           onError={() => setFailed(true)}

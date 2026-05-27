@@ -96,7 +96,8 @@ a,
 }
 
 .admin-brand-title {
-  font-size: 16px;
+  padding-top: 2px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.2;
   color: var(--text-primary);
@@ -2222,8 +2223,7 @@ body.login-screen {
   border: 1px solid rgba(59, 130, 246, 0.34);
   border-radius: 18px;
   background:
-    linear-gradient(180deg, rgba(11, 20, 42, 0.76), rgba(8, 14, 30, 0.64)),
-    rgba(8, 14, 30, 0.62);
+    linear-gradient(180deg, rgba(11, 20, 42, 0.76), rgba(8, 14, 30, 0.64)), rgba(8, 14, 30, 0.62);
   box-shadow:
     inset 0 0 0 1px rgba(147, 197, 253, 0.06),
     0 8px 22px rgba(2, 6, 23, 0.36);
@@ -2283,8 +2283,7 @@ body.login-screen {
   border-radius: 28px;
   padding: 48px;
   background:
-    linear-gradient(180deg, rgba(19, 31, 62, 0.16), rgba(8, 15, 35, 0.16)),
-    rgba(8, 15, 35, 0.78);
+    linear-gradient(180deg, rgba(19, 31, 62, 0.16), rgba(8, 15, 35, 0.16)), rgba(8, 15, 35, 0.78);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow:

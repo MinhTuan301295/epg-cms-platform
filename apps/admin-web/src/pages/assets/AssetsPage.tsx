@@ -22,6 +22,7 @@ import { hasPermission, PERMISSIONS } from '../../features/auth/permissions';
 
 import { apiClient } from '../../services/api-client';
 import { useAuthStore } from '../../stores/auth.store';
+import { resolveMediaUrl } from '../../utils/media-url';
 interface Asset {
   id: string;
   name: string;
@@ -435,7 +436,7 @@ export function AssetsPage() {
                   <div className="asset-thumb-box">
                     {record.thumbnailUrl || record.posterUrl ? (
                       <img
-                        src={record.thumbnailUrl || record.posterUrl}
+                        src={resolveMediaUrl(record.thumbnailUrl || record.posterUrl)}
                         alt={record.name}
                         className="asset-thumb-img"
                       />
@@ -622,7 +623,7 @@ export function AssetsPage() {
                   <div className="channel-logo-box channel-logo-box-lg">
                     {posterPreviewUrl ? (
                       <img
-                        src={posterPreviewUrl}
+                        src={resolveMediaUrl(posterPreviewUrl)}
                         alt="Poster preview"
                         className="channel-logo-img"
                       />
@@ -664,7 +665,7 @@ export function AssetsPage() {
                   <div className="channel-logo-box channel-logo-box-lg">
                     {thumbnailPreviewUrl ? (
                       <img
-                        src={thumbnailPreviewUrl}
+                        src={resolveMediaUrl(thumbnailPreviewUrl)}
                         alt="Thumbnail preview"
                         className="channel-logo-img"
                       />

@@ -8,6 +8,7 @@ import { hasPermission, PERMISSIONS } from '../../features/auth/permissions';
 
 import { apiClient } from '../../services/api-client';
 import { useAuthStore } from '../../stores/auth.store';
+import { resolveMediaUrl } from '../../utils/media-url';
 
 interface Channel {
   id: string;
@@ -423,7 +424,7 @@ export function ChannelsPage() {
                   <div className="channel-logo-box">
                     {record.logoUrl ? (
                       <img
-                        src={record.logoUrl}
+                        src={resolveMediaUrl(record.logoUrl)}
                         alt={record.name}
                         className="channel-logo-img"
                         onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
@@ -569,7 +570,7 @@ export function ChannelsPage() {
                 <div className="channel-logo-box channel-logo-box-lg">
                     {(logoPreviewUrl || createForm.getFieldValue('logoUrl')) ? (
                       <img
-                        src={logoPreviewUrl || createForm.getFieldValue('logoUrl')}
+                        src={resolveMediaUrl(logoPreviewUrl || createForm.getFieldValue('logoUrl'))}
                         alt="Logo preview"
                         className="channel-logo-img"
                       />
